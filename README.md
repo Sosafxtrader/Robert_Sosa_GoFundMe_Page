@@ -16,7 +16,7 @@ Fundraiser link: `https://gofund.me/c3272ce87`
 
 Open the file directly in your browser:
 
-- `/home/runner/work/Robert_Sosa_GoFundMe_Page/Robert_Sosa_GoFundMe_Page/index.html`
+- `index.html`
 
 or start a local static server from the repository root, for example:
 

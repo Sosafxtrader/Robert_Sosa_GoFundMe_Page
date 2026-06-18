@@ -79,7 +79,7 @@
     </p>
 
     <div class="link-box">
-      <input id="fundraiserLink" value="https://gofund.me/c3272ce87" readonly />
+      <input id="fundraiserLink" readonly />
       <button id="copyBtn" type="button">Copy</button>
     </div>
 
@@ -105,6 +105,12 @@
     const linkInput = document.getElementById("fundraiserLink");
     const copyBtn = document.getElementById("copyBtn");
     const nativeShareBtn = document.getElementById("nativeShareBtn");
+    linkInput.value = fundraiserUrl;
+
+    if (!navigator.share) {
+      nativeShareBtn.disabled = true;
+      nativeShareBtn.title = "Native share is not supported on this device.";
+    }
 
     function setStatus(text) {
       status.textContent = text;
