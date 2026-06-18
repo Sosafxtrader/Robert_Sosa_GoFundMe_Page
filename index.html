@@ -135,7 +135,8 @@
         linkInput.focus();
         linkInput.select();
         setStatus("Link copied.");
-      } catch {
+      } catch (error) {
+        console.error("Clipboard copy failed:", error);
         setStatus("Copy failed. Select the link manually and copy it.");
       }
     });
@@ -153,7 +154,8 @@
           url: fundraiserUrl
         });
         setStatus("Thanks for sharing.");
-      } catch {
+      } catch (error) {
+        console.error("Share failed:", error);
         setStatus("Share was cancelled or unavailable.");
       }
     });
