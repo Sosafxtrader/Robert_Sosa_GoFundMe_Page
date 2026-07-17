@@ -105,6 +105,18 @@
     const linkInput = document.getElementById("fundraiserLink");
     const copyBtn = document.getElementById("copyBtn");
     const nativeShareBtn = document.getElementById("nativeShareBtn");
+
+    const requiredElements = { status, linkInput, copyBtn, nativeShareBtn };
+    const missing = Object.keys(requiredElements).filter((key) => !requiredElements[key]);
+    if (missing.length > 0) {
+      const message = `Share page failed to initialize; missing elements: ${missing.join(", ")}`;
+      console.error(message);
+      if (status) {
+        status.textContent = "This page could not load correctly. Please refresh and try again.";
+      }
+      throw new Error(message);
+    }
+
     linkInput.value = fundraiserUrl;
 
     if (!navigator.share) {
@@ -129,9 +141,25 @@
     document.getElementById("emailShare").href =
       `mailto:?subject=${encodeURIComponent("Support Robert Sosa")}&body=${encodeURIComponent(buildShareText())}`;
 
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      // Fallback for insecure contexts (e.g. plain http) or browsers
+      // without the async Clipboard API.
+      linkInput.focus();
+      linkInput.select();
+      const copied = document.execCommand && document.execCommand("copy");
+      if (!copied) {
+        throw new Error("Clipboard API unavailable and execCommand copy failed.");
+      }
+    }
+
     copyBtn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(fundraiserUrl);
+        await copyToClipboard(fundraiserUrl);
         linkInput.focus();
         linkInput.select();
         setStatus("Link copied.");
@@ -155,8 +183,15 @@
         });
         setStatus("Thanks for sharing.");
       } catch (error) {
+        // A user dismissing the native share sheet rejects with AbortError.
+        // That is expected, so it is not treated as a failure.
+        if (error && error.name === "AbortError") {
+          setStatus("Share cancelled.");
+          return;
+        }
+
         console.error("Share failed:", error);
-        setStatus("Share was cancelled or unavailable.");
+        setStatus("Sharing failed. Please try one of the other share options below.");
       }
     });
   </script>
