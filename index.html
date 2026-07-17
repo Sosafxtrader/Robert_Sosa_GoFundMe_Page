@@ -98,6 +98,7 @@
   </main>
 
   <script>
+    const PAGE_TITLE = "Support Robert Sosa";
     const fundraiserUrl = "https://gofund.me/c3272ce87";
     const shareMessage = "Please consider supporting Robert Sosa's recovery:";
 
@@ -112,6 +113,8 @@
       nativeShareBtn.title = "Native share is not supported on this device.";
     }
 
+    const enc = encodeURIComponent;
+
     function setStatus(text) {
       status.textContent = text;
     }
@@ -120,44 +123,55 @@
       return `${shareMessage} ${fundraiserUrl}`;
     }
 
-    document.getElementById("xShare").href =
-      `https://x.com/intent/tweet?text=${encodeURIComponent(buildShareText())}`;
-    document.getElementById("facebookShare").href =
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fundraiserUrl)}`;
-    document.getElementById("whatsappShare").href =
-      `https://wa.me/?text=${encodeURIComponent(buildShareText())}`;
-    document.getElementById("emailShare").href =
-      `mailto:?subject=${encodeURIComponent("Support Robert Sosa")}&body=${encodeURIComponent(buildShareText())}`;
-
-    copyBtn.addEventListener("click", async () => {
+    // Wraps the shared "try the action, then report status, logging on failure"
+    // flow used by every share/copy interaction.
+    async function runShareAction({ action, success, failure, errorLabel }) {
       try {
-        await navigator.clipboard.writeText(fundraiserUrl);
-        linkInput.focus();
-        linkInput.select();
-        setStatus("Link copied.");
+        await action();
+        setStatus(success);
       } catch (error) {
-        console.error("Clipboard copy failed:", error);
-        setStatus("Copy failed. Select the link manually and copy it.");
+        console.error(errorLabel, error);
+        setStatus(failure);
       }
-    });
+    }
 
-    nativeShareBtn.addEventListener("click", async () => {
+    const shareLinks = {
+      xShare: () => `https://x.com/intent/tweet?text=${enc(buildShareText())}`,
+      facebookShare: () => `https://www.facebook.com/sharer/sharer.php?u=${enc(fundraiserUrl)}`,
+      whatsappShare: () => `https://wa.me/?text=${enc(buildShareText())}`,
+      emailShare: () => `mailto:?subject=${enc(PAGE_TITLE)}&body=${enc(buildShareText())}`
+    };
+
+    for (const [id, buildHref] of Object.entries(shareLinks)) {
+      document.getElementById(id).href = buildHref();
+    }
+
+    copyBtn.addEventListener("click", () =>
+      runShareAction({
+        action: async () => {
+          await navigator.clipboard.writeText(fundraiserUrl);
+          linkInput.focus();
+          linkInput.select();
+        },
+        success: "Link copied.",
+        failure: "Copy failed. Select the link manually and copy it.",
+        errorLabel: "Clipboard copy failed:"
+      })
+    );
+
+    nativeShareBtn.addEventListener("click", () => {
       if (!navigator.share) {
         setStatus("Native share is not supported on this device.");
         return;
       }
 
-      try {
-        await navigator.share({
-          title: "Support Robert Sosa",
-          text: shareMessage,
-          url: fundraiserUrl
-        });
-        setStatus("Thanks for sharing.");
-      } catch (error) {
-        console.error("Share failed:", error);
-        setStatus("Share was cancelled or unavailable.");
-      }
+      runShareAction({
+        action: () =>
+          navigator.share({ title: PAGE_TITLE, text: shareMessage, url: fundraiserUrl }),
+        success: "Thanks for sharing.",
+        failure: "Share was cancelled or unavailable.",
+        errorLabel: "Share failed:"
+      });
     });
   </script>
 </body>
